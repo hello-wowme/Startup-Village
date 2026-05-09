@@ -16,18 +16,23 @@ export default function CompanyPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-      const { data } = await (supabase as any).from('profiles').select('*').eq('id', user.id).single()
-      if (data) setForm({
-        company_name: data.company_name || '',
-        company_role: data.company_role || '',
-        company_description: data.company_description || '',
-        industry: 'テクノロジー',
-      })
-      setLoading(false)
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) { router.push('/login'); return }
+        const { data } = await (supabase as any).from('profiles').select('*').eq('id', user.id).single()
+        if (data) setForm({
+          company_name: data.company_name || '',
+          company_role: data.company_role || '',
+          company_description: data.company_description || '',
+          industry: 'テクノロジー',
+        })
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [])

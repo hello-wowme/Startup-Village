@@ -18,18 +18,23 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ display_name: '', bio: '', company_name: '', company_role: '', company_description: '' })
 
   const load = async () => {
-    const { createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any).from('profiles').select('*').eq('id', user.id).single()
-    const p = data as Profile | null
-    if (p) {
-      setProfile(p)
-      setForm({ display_name: p.display_name || '', bio: p.bio || '', company_name: p.company_name || '', company_role: p.company_role || '', company_description: p.company_description || '' })
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/login'); return }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any).from('profiles').select('*').eq('id', user.id).single()
+      const p = data as Profile | null
+      if (p) {
+        setProfile(p)
+        setForm({ display_name: p.display_name || '', bio: p.bio || '', company_name: p.company_name || '', company_role: p.company_role || '', company_description: p.company_description || '' })
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   useEffect(() => { load() }, [])
