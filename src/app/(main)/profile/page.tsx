@@ -1,42 +1,51 @@
 'use client'
+
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BlueBadge } from '@/components/BlueBadge'
-import { CoinDisplay } from '@/components/CoinDisplay'
 import type { Profile } from '@/types/database'
-import { Loader2, BadgeCheck, Save, Gift, User } from 'lucide-react'
+import { Loader2, Pencil, LogOut, BadgeCheck, Save, X } from 'lucide-react'
 
 export default function ProfilePage() {
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [badgeLoading, setBadgeLoading] = useState(false)
-  const [weeklyLoading, setWeeklyLoading] = useState(false)
-  const [form, setForm] = useState({ display_name: '', bio: '' })
+  const [form, setForm] = useState({ display_name: '', bio: '', company_name: '', company_role: '', company_description: '' })
 
-  useEffect(() => {
-    const load = async () => {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-      const { data } = await (supabase as any).from('profiles').select('*').eq('id', user.id).single()
-      if (data) { setProfile(data); setForm({ display_name: data.display_name || '', bio: data.bio || '' }) }
-      setLoading(false)
-    }
-    load()
-  }, [])
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true)
+  const load = async () => {
     const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (user) await (supabase as any).from('profiles').update(form).eq('id', user.id)
-    setSaving(false); alert('保存しました')
+    if (!user) { router.push('/login'); return }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).from('profiles').select('*').eq('id', user.id).single()
+    const p = data as Profile | null
+    if (p) {
+      setProfile(p)
+      setForm({ display_name: p.display_name || '', bio: p.bio || '', company_name: p.company_name || '', company_role: p.company_role || '', company_description: p.company_description || '' })
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    const { createClient } = await import('@/lib/supabase/client')
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('profiles').update(form).eq('id', user.id)
+    setSaving(false)
+    setEditing(false)
+    load()
   }
 
   const handleBlueBadge = async () => {
@@ -48,105 +57,166 @@ export default function ProfilePage() {
     else alert(data.error || 'エラーが発生しました')
   }
 
-  const handleWeeklyCoins = async () => {
-    setWeeklyLoading(true)
-    const res = await fetch('/api/coins/weekly', { method: 'POST' })
-    const data = await res.json()
-    setWeeklyLoading(false)
-    if (data.ok) { alert(`${data.amount.toLocaleString()}コインを受け取りました！`); window.location.reload() }
-    else alert(data.error || 'エラーが発生しました')
+  const handleSignOut = async () => {
+    const { createClient } = await import('@/lib/supabase/client')
+    await createClient().auth.signOut()
+    router.push('/')
+    router.refresh()
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin" style={{ color: '#5148E5' }} size={28} /></div>
+  if (loading) return (
+    <div className="flex items-center justify-center h-96">
+      <Loader2 className="animate-spin" style={{ color: '#5148E5' }} size={32} />
+    </div>
+  )
+
+  const displayName = profile?.display_name || profile?.username || ''
+  const initial = displayName.charAt(0).toUpperCase()
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-black text-gray-900">プロフィール</h1>
-        <p className="text-sm text-gray-400 mt-1">アカウント情報を管理する</p>
+        {!editing && (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+          >
+            <Pencil size={14} />編集
+          </button>
+        )}
       </div>
 
-      {/* User card */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-        {profile?.avatar_url ? (
-          <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-2xl" />
-        ) : (
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-xl" style={{ background: '#5148E5' }}>
-            {(profile?.display_name || profile?.username || '?').charAt(0).toUpperCase()}
+      {/* Profile card */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+        {/* Banner */}
+        <div className="h-28" style={{ background: 'linear-gradient(135deg, #5148E5 0%, #38BDF8 100%)' }} />
+
+        {/* Avatar + info */}
+        <div className="px-6 pb-6">
+          <div className="flex items-end gap-4 -mt-10 mb-4">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-full border-4 border-white shadow-md flex-shrink-0" />
+            ) : (
+              <div className="w-20 h-20 rounded-full border-4 border-white shadow-md flex-shrink-0 flex items-center justify-center text-2xl font-black text-white" style={{ background: '#5148E5' }}>
+                {initial}
+              </div>
+            )}
+          </div>
+
+          {editing ? (
+            <form onSubmit={handleSave} className="space-y-3">
+              {[
+                { key: 'display_name', label: '表示名', placeholder: '田中太郎' },
+                { key: 'bio', label: '自己紹介', placeholder: '連続起業家。テック×農業に注目中。' },
+                { key: 'company_name', label: '会社名', placeholder: '株式会社テックファーム' },
+                { key: 'company_role', label: '役職', placeholder: '代表取締役' },
+                { key: 'company_description', label: '事業内容', placeholder: 'AIを活用した農業効率化...' },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key}>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1 block">{label}</label>
+                  <input
+                    type="text"
+                    value={form[key as keyof typeof form]}
+                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    placeholder={placeholder}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:border-transparent"
+                  />
+                </div>
+              ))}
+              <div className="flex gap-2 pt-1">
+                <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition-all" style={{ background: '#5148E5' }}>
+                  {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}保存する
+                </button>
+                <button type="button" onClick={() => setEditing(false)} className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-all">
+                  <X size={15} />
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-xl font-black text-gray-900">{displayName}</h2>
+                {profile?.has_blue_badge && <BlueBadge size={18} />}
+              </div>
+              <p className="text-sm text-gray-400 mb-1">@{profile?.username}</p>
+              {profile?.bio && <p className="text-sm text-gray-600 mt-2">{profile.bio}</p>}
+              {profile?.company_name && (
+                <p className="text-sm text-gray-500 mt-1">🏢 {profile.company_name}{profile.company_role ? ` · ${profile.company_role}` : ''}</p>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Stats */}
+        {!editing && (
+          <div className="grid grid-cols-2 gap-3 px-6 pb-6">
+            <div className="rounded-xl p-4" style={{ background: '#FFF8E1' }}>
+              <p className="text-xs font-semibold text-amber-600 mb-1">所持コイン</p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-lg">🪙</span>
+                <span className="text-xl font-black text-amber-600">{(profile?.coins ?? 0).toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="rounded-xl p-4" style={{ background: '#EEF0FF' }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: '#5148E5' }}>累計獲得コイン</p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-lg">🏅</span>
+                <span className="text-xl font-black" style={{ color: '#5148E5' }}>{(profile?.total_coins_received ?? 0).toLocaleString()}</span>
+              </div>
+            </div>
           </div>
         )}
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <p className="font-black text-gray-900 text-lg">{profile?.display_name || profile?.username}</p>
-            {profile?.has_blue_badge && <BlueBadge size={18} />}
+
+        {/* Blue badge */}
+        {!editing && (
+          <div className="px-6 pb-6">
+            {profile?.has_blue_badge ? (
+              <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: '#EEF0FF' }}>
+                <BlueBadge size={20} />
+                <div>
+                  <p className="font-bold text-sm" style={{ color: '#5148E5' }}>ブルーバッジ認証済み</p>
+                  <p className="text-xs text-gray-400">プロフィールに認証マークが表示されています</p>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleBlueBadge}
+                disabled={badgeLoading}
+                className="w-full p-4 rounded-xl text-left hover:opacity-90 transition-all disabled:opacity-50"
+                style={{ background: '#EEF0FF' }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <BadgeCheck size={20} style={{ color: '#5148E5' }} />
+                    <div>
+                      <p className="font-bold text-sm" style={{ color: '#5148E5' }}>ブルーバッジ</p>
+                      <p className="text-xs text-gray-400">ブルーバッジを取得すると、プロフィールに認証マークが表示され、追加で50,000コインが付与されます。</p>
+                      <p className="text-xs text-gray-300 mt-0.5">※ Stripe課金機能はBuilder+プランで利用可能です</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black ml-3 flex-shrink-0" style={{ color: '#5148E5' }}>¥980</span>
+                </div>
+              </button>
+            )}
           </div>
-          <p className="text-gray-400 text-sm">@{profile?.username}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-gray-400 mb-0.5">残高</p>
-          <CoinDisplay amount={profile?.coins ?? 0} size="lg" />
-        </div>
+        )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm text-center">
-          <p className="text-xs text-gray-400 mb-1">コイン残高</p>
-          <CoinDisplay amount={profile?.coins ?? 0} size="lg" />
-        </div>
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm text-center">
-          <p className="text-xs text-gray-400 mb-1">受け取った総コイン</p>
-          <CoinDisplay amount={profile?.total_coins_received ?? 0} size="lg" />
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-3">
-        <h2 className="text-sm font-black text-gray-500 uppercase tracking-wide">特典・課金</h2>
-        <button onClick={handleWeeklyCoins} disabled={weeklyLoading}
-          className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 disabled:opacity-50"
-          style={{ background: '#FFF8E1', color: '#92400E' }}>
-          <span className="flex items-center gap-2"><Gift size={18} className="text-amber-500" />週次ボーナスを受け取る</span>
-          <span className="text-amber-500 font-black">+10,000 🪙</span>
+      {/* Logout */}
+      {!editing && (
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-red-100 text-red-400 text-sm font-semibold hover:bg-red-50 transition-all"
+        >
+          <LogOut size={15} />ログアウト
         </button>
-        {!profile?.has_blue_badge ? (
-          <button onClick={handleBlueBadge} disabled={badgeLoading}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 disabled:opacity-50"
-            style={{ background: '#EEF0FF', color: '#3730A3' }}>
-            <span className="flex items-center gap-2"><BadgeCheck size={18} style={{ color: '#5148E5' }} />ブルーバッジを取得</span>
-            <span className="text-xs font-black" style={{ color: '#5148E5' }}>¥980 + 50,000🪙</span>
-          </button>
-        ) : (
-          <div className="flex items-center gap-2 px-4 py-3.5 rounded-xl text-sm font-bold" style={{ background: '#EEF0FF', color: '#5148E5' }}>
-            <BlueBadge size={16} />ブルーバッジ認証済み ✓
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* Edit form */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-        <h2 className="font-black text-gray-900 mb-4">プロフィール編集</h2>
-        <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">表示名</label>
-            <input type="text" value={form.display_name} onChange={e => setForm({ ...form, display_name: e.target.value })}
-              placeholder="田中太郎"
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:border-transparent" />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">自己紹介</label>
-            <input type="text" value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })}
-              placeholder="連続起業家。テック×農業に注目中。"
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:border-transparent" />
-          </div>
-          <button type="submit" disabled={saving}
-            className="w-full text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60"
-            style={{ background: '#5148E5' }}>
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}保存する
-          </button>
-        </form>
-      </div>
-      <p className="text-xs text-gray-400 text-center">⚠️ 応援コインは現金化できません。実際の投資・出資ではありません。</p>
+      <p className="text-xs text-gray-400 text-center mt-6">
+        ⚠️ 応援コインは現金化できません。シミュレーション用ポイントです。
+      </p>
     </div>
   )
 }
