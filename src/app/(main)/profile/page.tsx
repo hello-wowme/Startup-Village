@@ -21,8 +21,9 @@ export default function ProfilePage() {
     try {
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { window.location.href = '/login'; return }
+      const user = session.user
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase as any).from('profiles').select('*').eq('id', user.id).single()
       const p = data as Profile | null
