@@ -60,7 +60,7 @@ export default function ProfilePage() {
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin" style={{ color: '#5148E5' }} size={28} /></div>
 
   return (
-    <div className="max-w-xl space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-black text-gray-900">プロフィール</h1>
         <p className="text-sm text-gray-400 mt-1">アカウント情報を管理する</p>

@@ -24,7 +24,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <PostDetail
         post={post as PostWithProfile}
         comments={(comments ?? []) as CommentWithProfile[]}

@@ -22,7 +22,7 @@ export default async function RankingPage() {
   const rankMedals = ['🥇', '🥈', '🥉']
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <div className="mb-6 flex items-center gap-3">
         <Trophy size={26} style={{ color: '#5148E5' }} />
         <div>

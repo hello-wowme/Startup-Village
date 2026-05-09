@@ -23,7 +23,7 @@ export default function NewPostPage() {
   }
 
   return (
-    <div className="max-w-xl space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-black text-gray-900">投稿する</h1>
         <p className="text-sm text-gray-400 mt-1">あなたの起業アイデアをシェアしよう</p>
