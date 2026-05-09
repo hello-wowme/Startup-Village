@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #5148E5;
+  --color-accent-light: #6E67FF;
+  --color-accent-dark: #3B34C4;
+  --color-accent-pale: #EEF0FF;
+  --color-accent-muted: #C7C4F8;
+}
+
+body {
+  background: #ffffff;
+  color: #111827;
+  font-feature-settings: "palt";
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
