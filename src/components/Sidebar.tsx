@@ -96,15 +96,6 @@ export function Sidebar() {
 
       {/* Bottom */}
       <div className="border-t border-gray-100 p-4 space-y-3">
-        {/* Dark mode toggle */}
-        <button
-          onClick={() => setDark(!dark)}
-          className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-600 transition-colors w-full px-2"
-        >
-          {dark ? <Sun size={14} /> : <Moon size={14} />}
-          {dark ? 'ライトモード' : 'ダークモード'}
-        </button>
-
         {profile ? (
           <div className="flex items-center gap-3">
             {profile.avatar_url ? (
