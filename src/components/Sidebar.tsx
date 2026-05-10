@@ -7,7 +7,7 @@ import type { Profile } from '@/types/database'
 import { CoinDisplay } from './CoinDisplay'
 import { BlueBadge } from './BlueBadge'
 import {
-  Home, PenLine, Trophy, Building2, User, LayoutDashboard, Moon, Sun, LogOut, Coins
+  Home, PenLine, Trophy, Building2, User, LayoutDashboard, LogOut, Coins
 } from 'lucide-react'
 
 const NAV = [
@@ -22,17 +22,15 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [dark, setDark] = useState(false)
-
   useEffect(() => {
     let sub: { unsubscribe: () => void } | null = null
     import('@/lib/supabase/client').then(({ createClient }) => {
       const supabase = createClient()
       const load = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { setProfile(null); return }
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) { setProfile(null); return }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data } = await (supabase as any).from('profiles').select('*').eq('id', user.id).single()
+        const { data } = await (supabase as any).from('profiles').select('*').eq('id', session.user.id).single()
         setProfile(data as Profile | null)
       }
       load()

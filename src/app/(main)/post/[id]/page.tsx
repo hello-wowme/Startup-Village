@@ -3,7 +3,7 @@ import { PostDetail } from '@/components/PostDetail'
 import { notFound } from 'next/navigation'
 import type { PostWithProfile, CommentWithProfile } from '@/types/database'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

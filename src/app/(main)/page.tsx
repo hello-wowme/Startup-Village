@@ -4,7 +4,7 @@ import { NewPostButton } from '@/components/NewPostButton'
 import type { PostWithProfile } from '@/types/database'
 import { POST_CATEGORIES } from '@/types/database'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function HomePage({
   searchParams,
