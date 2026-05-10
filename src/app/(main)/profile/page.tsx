@@ -88,7 +88,7 @@ export default function ProfilePage() {
     const res = await fetch('/api/coins/weekly', { method: 'POST' })
     const data = await res.json()
     setWeeklyLoading(false)
-    if (data.ok) { alert(`${data.amount.toLocaleString()}コインを受け取りました！`); load() }
+    if (data.ok) { alert(`${data.amount.toLocaleString()}コインを受け取りました！`); if (profile) fetchData(profile.id) }
     else alert(data.error || 'エラーが発生しました')
   }
 
