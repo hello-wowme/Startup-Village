@@ -7,7 +7,7 @@ import { ja } from 'date-fns/locale'
 import type { PostWithProfile, CommentWithProfile, Profile } from '@/types/database'
 import { BlueBadge } from './BlueBadge'
 import { CoinDisplay } from './CoinDisplay'
-import { MessageCircle, Sparkles, Building2, ArrowLeft, Send, Loader2, Coins, Star } from 'lucide-react'
+import { MessageCircle, Building2, ArrowLeft, Send, Loader2, Coins } from 'lucide-react'
 import Link from 'next/link'
 
 const COIN_OPTIONS = [100, 500, 1000, 5000]
@@ -25,11 +25,6 @@ export function PostDetail({ post, comments: initialComments, currentProfile }: 
   const [commentLoading, setCommentLoading] = useState(false)
   const [selectedCoin, setSelectedCoin] = useState(100)
   const [coinLoading, setCoinLoading] = useState(false)
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiError, setAiError] = useState<string | null>(null)
-  const [aiResult, setAiResult] = useState<{ score: number; feedback: string } | null>(
-    post.ai_score !== null ? { score: post.ai_score, feedback: post.ai_feedback ?? '' } : null
-  )
   const profile = post.profiles
 
   const handleComment = async (e: React.FormEvent) => {
@@ -71,27 +66,6 @@ export function PostDetail({ post, comments: initialComments, currentProfile }: 
     }
   }
 
-  const handleAiEval = async () => {
-    setAiLoading(true)
-    setAiError(null)
-    try {
-      const res = await fetch('/api/ai-eval', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId: post.id }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setAiResult(data)
-      } else {
-        setAiError(data.error || 'AI評価に失敗しました')
-      }
-    } catch {
-      setAiError('ネットワークエラーが発生しました')
-    } finally {
-      setAiLoading(false)
-    }
-  }
 
   return (
     <div className="space-y-5">
@@ -136,61 +110,6 @@ export function PostDetail({ post, comments: initialComments, currentProfile }: 
           <CoinDisplay amount={post.coins_received} size="sm" />
         </div>
       </article>
-
-      {/* AI Evaluation */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#EEF0FF' }}>
-            <Sparkles size={16} style={{ color: '#5148E5' }} />
-          </div>
-          <div>
-            <h2 className="font-black text-gray-900">AI事業評価</h2>
-            <p className="text-xs text-gray-400">Powered by Claude AI</p>
-          </div>
-        </div>
-
-        {aiResult ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-0.5">
-                {[1,2,3,4,5].map((s) => (
-                  <Star key={s} size={20}
-                    className={s <= Math.round(aiResult.score / 20) ? '' : 'text-gray-200'}
-                    style={s <= Math.round(aiResult.score / 20) ? { color: '#F59E0B', fill: '#F59E0B' } : { fill: '#E5E7EB' }}
-                  />
-                ))}
-              </div>
-              <span className="text-3xl font-black" style={{ color: '#5148E5' }}>{aiResult.score}</span>
-              <span className="text-gray-400 text-sm">/ 100点</span>
-            </div>
-            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${aiResult.score}%`, background: 'linear-gradient(90deg, #5148E5, #818CF8)' }}
-              />
-            </div>
-            <div className="rounded-xl p-4 text-sm text-gray-700 leading-relaxed" style={{ background: '#F8F8FF' }}>
-              {aiResult.feedback}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-6">
-            <p className="text-gray-400 text-sm mb-4">AIがこの事業アイデアを市場性・独自性・実現可能性・収益モデルの4軸で評価します</p>
-            <button
-              onClick={handleAiEval}
-              disabled={aiLoading}
-              className="text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-all hover:opacity-90 flex items-center gap-2 mx-auto shadow-sm"
-              style={{ background: '#5148E5' }}
-            >
-              {aiLoading ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-              {aiLoading ? 'AI評価中...' : 'AI評価を取得する'}
-            </button>
-            {aiError && (
-              <p className="text-red-500 text-xs mt-3 text-center">{aiError}</p>
-            )}
-          </div>
-        )}
-      </div>
 
       {/* Send Coin */}
       {currentProfile && currentProfile.id !== post.user_id && (
