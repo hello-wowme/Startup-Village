@@ -105,12 +105,19 @@ export function PostCard({ post }: PostCardProps) {
         )}
 
         {/* Stats + Support */}
-        <div className="mt-3 flex items-center gap-4 text-xs text-gray-400">
+        <div className="mt-3 pt-3 border-t border-gray-50 flex items-center gap-3 text-xs text-gray-400">
           <span className="flex items-center gap-1">
             <MessageCircle size={13} />
             {post.comments_count}件
           </span>
-          <CoinDisplay amount={post.coins_received} size="sm" />
+          {/* 応援コイン総額 */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl" style={{ background: '#FFFBEB' }}>
+            <span className="text-sm">🪙</span>
+            <span className="font-black text-sm" style={{ color: '#B45309' }}>
+              {post.coins_received.toLocaleString()}
+            </span>
+            <span className="text-xs text-amber-500 font-medium">応援</span>
+          </div>
           <div className="ml-auto">
             <SupportButton postId={post.id} postUserId={post.user_id} />
           </div>

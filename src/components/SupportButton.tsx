@@ -17,6 +17,7 @@ export function SupportButton({ postId, postUserId }: Props) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sentAmount, setSentAmount] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -74,7 +75,9 @@ export function SupportButton({ postId, postUserId }: Props) {
     if (res.ok) {
       setOpen(false)
       setMyCoins(prev => prev - num)
+      setSentAmount(num)
       router.refresh()
+      setTimeout(() => setSentAmount(null), 3000)
     } else {
       const data = await res.json()
       setError(data.error || 'エラーが発生しました')
@@ -84,6 +87,11 @@ export function SupportButton({ postId, postUserId }: Props) {
   return (
     <div className="relative" onClick={e => e.stopPropagation()}>
       {!open ? (
+        sentAmount ? (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border" style={{ background: '#F0FDF4', color: '#15803D', borderColor: '#BBF7D0' }}>
+            🪙 +{sentAmount.toLocaleString()} 送りました！
+          </div>
+        ) : (
         <button
           onClick={handleOpen}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90 border"
@@ -92,6 +100,7 @@ export function SupportButton({ postId, postUserId }: Props) {
           <Coins size={13} />
           応援する
         </button>
+        )
       ) : (
         <div
           className="absolute bottom-8 right-0 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 p-3 z-50"
