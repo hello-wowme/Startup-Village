@@ -75,8 +75,8 @@ export default function LoginPage() {
 
             <p className="text-xs text-gray-400 text-center mt-5">
               ログインすることで
-              <a href="#" className="underline">利用規約</a>・
-              <a href="#" className="underline">プライバシーポリシー</a>
+              <a href="/terms" className="underline">利用規約</a>・
+              <a href="/privacy" className="underline">プライバシーポリシー</a>
               に同意したものとみなします。
             </p>
           </div>
