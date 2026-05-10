@@ -7,6 +7,7 @@ import type { PostWithProfile } from '@/types/database'
 import { BlueBadge } from './BlueBadge'
 import { CoinDisplay } from './CoinDisplay'
 import { MessageCircle, Sparkles, Building2 } from 'lucide-react'
+import { DeletePostButton } from './DeletePostButton'
 
 interface PostCardProps {
   post: PostWithProfile
@@ -33,7 +34,7 @@ export function PostCard({ post }: PostCardProps) {
     <Link href={`/post/${post.id}`} className="block group">
       <article className="bg-white border border-gray-100 rounded-2xl p-5 hover:border-gray-200 hover:shadow-md transition-all duration-200">
         {/* Author row */}
-        <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-start gap-3 mb-3" onClick={e => e.stopPropagation()}>
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="" className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-gray-100" />
           ) : (
@@ -79,6 +80,7 @@ export function PostCard({ post }: PostCardProps) {
             <span className="text-xs text-gray-400">
               {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ja })}
             </span>
+            <DeletePostButton postId={post.id} postUserId={post.user_id} />
           </div>
         </div>
 
