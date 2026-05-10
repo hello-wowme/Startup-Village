@@ -71,8 +71,7 @@ export default function ProfilePage() {
     await (supabase as any).from('profiles').update(form).eq('id', session.user.id)
     setSaving(false)
     setEditing(false)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) fetchData(session.user.id)
+    fetchData(session.user.id)
   }
 
   const handleBlueBadge = async () => {
