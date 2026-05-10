@@ -21,6 +21,12 @@ export function Sidebar() {
   const [profile, setProfile] = useState<Profile | null>(null)
 
   useEffect(() => {
+    // キャッシュから即時表示
+    try {
+      const cached = localStorage.getItem('sb_profile')
+      if (cached) setProfile(JSON.parse(cached))
+    } catch {}
+
     let sub: { unsubscribe: () => void } | null = null
     import('@/lib/supabase/client').then(({ createClient }) => {
       const supabase = createClient()
@@ -28,12 +34,19 @@ export function Sidebar() {
       const fetchProfile = async (userId: string) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data } = await (supabase as any).from('profiles').select('*').eq('id', userId).single()
-        setProfile(data as Profile | null)
+        if (data) {
+          setProfile(data as Profile)
+          try { localStorage.setItem('sb_profile', JSON.stringify(data)) } catch {}
+        }
       }
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session) fetchProfile(session.user.id)
-        else setProfile(null)
+        if (session) {
+          fetchProfile(session.user.id)
+        } else {
+          setProfile(null)
+          try { localStorage.removeItem('sb_profile') } catch {}
+        }
       })
       sub = subscription
     })

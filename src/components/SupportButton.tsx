@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { Coins, Loader2, X } from 'lucide-react'
 
 interface Props {
   postId: string
   postUserId: string
+  onCoinSent?: (amount: number) => void
 }
 
-export function SupportButton({ postId, postUserId }: Props) {
-  const router = useRouter()
+export function SupportButton({ postId, postUserId, onCoinSent }: Props) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [myCoins, setMyCoins] = useState<number>(0)
   const [open, setOpen] = useState(false)
@@ -76,7 +75,7 @@ export function SupportButton({ postId, postUserId }: Props) {
       setOpen(false)
       setMyCoins(prev => prev - num)
       setSentAmount(num)
-      router.refresh()
+      onCoinSent?.(num)
       setTimeout(() => setSentAmount(null), 3000)
     } else {
       const data = await res.json()

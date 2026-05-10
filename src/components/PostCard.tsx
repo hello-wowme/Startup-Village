@@ -3,9 +3,9 @@
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { useState } from 'react'
 import type { PostWithProfile } from '@/types/database'
 import { BlueBadge } from './BlueBadge'
-import { CoinDisplay } from './CoinDisplay'
 import { MessageCircle, Sparkles, Building2 } from 'lucide-react'
 import { DeletePostButton } from './DeletePostButton'
 import { SupportButton } from './SupportButton'
@@ -30,6 +30,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 export function PostCard({ post }: PostCardProps) {
   const profile = post.profiles
   const catColor = CATEGORY_COLORS[post.category] ?? CATEGORY_COLORS['その他']
+  const [coinsReceived, setCoinsReceived] = useState(post.coins_received)
 
   return (
     <Link href={`/post/${post.id}`} className="block group">
@@ -114,12 +115,16 @@ export function PostCard({ post }: PostCardProps) {
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl" style={{ background: '#FFFBEB' }}>
             <span className="text-sm">🪙</span>
             <span className="font-black text-sm" style={{ color: '#B45309' }}>
-              {post.coins_received.toLocaleString()}
+              {coinsReceived.toLocaleString()}
             </span>
             <span className="text-xs text-amber-500 font-medium">応援</span>
           </div>
           <div className="ml-auto">
-            <SupportButton postId={post.id} postUserId={post.user_id} />
+            <SupportButton
+              postId={post.id}
+              postUserId={post.user_id}
+              onCoinSent={(amount) => setCoinsReceived(prev => prev + amount)}
+            />
           </div>
         </div>
       </article>
