@@ -26,6 +26,7 @@ export function PostDetail({ post, comments: initialComments, currentProfile }: 
   const [selectedCoin, setSelectedCoin] = useState(100)
   const [coinLoading, setCoinLoading] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
   const [aiResult, setAiResult] = useState<{ score: number; feedback: string } | null>(
     post.ai_score !== null ? { score: post.ai_score, feedback: post.ai_feedback ?? '' } : null
   )
@@ -72,13 +73,24 @@ export function PostDetail({ post, comments: initialComments, currentProfile }: 
 
   const handleAiEval = async () => {
     setAiLoading(true)
-    const res = await fetch('/api/ai-eval', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ postId: post.id }),
-    })
-    setAiLoading(false)
-    if (res.ok) setAiResult(await res.json())
+    setAiError(null)
+    try {
+      const res = await fetch('/api/ai-eval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: post.id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setAiResult(data)
+      } else {
+        setAiError(data.error || 'AI評価に失敗しました')
+      }
+    } catch {
+      setAiError('ネットワークエラーが発生しました')
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   return (
@@ -173,6 +185,9 @@ export function PostDetail({ post, comments: initialComments, currentProfile }: 
               {aiLoading ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
               {aiLoading ? 'AI評価中...' : 'AI評価を取得する'}
             </button>
+            {aiError && (
+              <p className="text-red-500 text-xs mt-3 text-center">{aiError}</p>
+            )}
           </div>
         )}
       </div>

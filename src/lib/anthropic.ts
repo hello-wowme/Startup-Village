@@ -7,7 +7,7 @@ function getClient() {
 export async function evaluateBusiness(title: string, content: string): Promise<{ score: number; feedback: string }> {
   const client = getClient()
   const message = await client.messages.create({
-    model: 'claude-opus-4-7',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
     messages: [
       {
