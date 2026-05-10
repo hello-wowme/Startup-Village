@@ -4,11 +4,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import type { Profile } from '@/types/database'
-import { CoinDisplay } from './CoinDisplay'
 import { BlueBadge } from './BlueBadge'
-import {
-  Home, PenLine, Trophy, Building2, User, LayoutDashboard, LogOut, Coins
-} from 'lucide-react'
+import { Home, PenLine, Trophy, Building2, User, LayoutDashboard, LogOut, Coins } from 'lucide-react'
 
 const NAV = [
   { href: '/',         label: 'タイムライン', icon: Home },
@@ -22,19 +19,22 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
+
   useEffect(() => {
     let sub: { unsubscribe: () => void } | null = null
     import('@/lib/supabase/client').then(({ createClient }) => {
       const supabase = createClient()
-      const load = async () => {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) { setProfile(null); return }
+
+      const fetchProfile = async (userId: string) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data } = await (supabase as any).from('profiles').select('*').eq('id', session.user.id).single()
+        const { data } = await (supabase as any).from('profiles').select('*').eq('id', userId).single()
         setProfile(data as Profile | null)
       }
-      load()
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(load)
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) fetchProfile(session.user.id)
+        else setProfile(null)
+      })
       sub = subscription
     })
     return () => sub?.unsubscribe()
@@ -51,6 +51,9 @@ export function Sidebar() {
     ...NAV,
     ...(profile?.is_admin ? [{ href: '/admin', label: '管理画面', icon: LayoutDashboard }] : []),
   ]
+
+  const displayName = profile ? (profile.display_name || profile.username) : ''
+  const twitterUrl = profile?.twitter_handle ? `https://x.com/${profile.twitter_handle}` : null
 
   return (
     <aside className="fixed top-0 left-0 h-screen w-64 flex flex-col bg-white border-r border-gray-100 z-40">
@@ -75,53 +78,62 @@ export function Sidebar() {
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
           return (
-            <Link
-              key={href}
-              href={href}
+            <Link key={href} href={href}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all"
-              style={active
-                ? { background: '#5148E5', color: '#fff' }
-                : { color: '#6B7280' }}
+              style={active ? { background: '#5148E5', color: '#fff' } : { color: '#6B7280' }}
               onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = '#F3F4F6' }}
               onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = '' }}
             >
-              <Icon size={18} />
-              {label}
+              <Icon size={18} />{label}
             </Link>
           )
         })}
       </nav>
 
       {/* Bottom */}
-      <div className="border-t border-gray-100 p-4 space-y-3">
+      <div className="border-t border-gray-100 p-4">
         {profile ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Avatar */}
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt="" className="w-9 h-9 rounded-full flex-shrink-0" />
             ) : (
               <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: '#5148E5' }}>
-                {(profile.display_name || profile.username).charAt(0).toUpperCase()}
+                {displayName.charAt(0).toUpperCase()}
               </div>
             )}
+
+            {/* Name + coins */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <p className="text-sm font-bold text-gray-900 truncate">{profile.display_name || profile.username}</p>
+              <div className="flex items-center gap-1 min-w-0">
+                {twitterUrl ? (
+                  <a href={twitterUrl} target="_blank" rel="noopener noreferrer"
+                    className="text-sm font-bold text-gray-900 truncate hover:underline">
+                    {displayName}
+                  </a>
+                ) : (
+                  <span className="text-sm font-bold text-gray-900 truncate">{displayName}</span>
+                )}
                 {profile.has_blue_badge && <BlueBadge size={13} />}
               </div>
-              <CoinDisplay amount={profile.coins} size="sm" />
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="text-xs">🪙</span>
+                <span className="text-xs font-bold text-amber-600">{(profile.coins ?? 0).toLocaleString()}</span>
+                <span className="text-xs text-gray-400">コイン</span>
+              </div>
             </div>
-            <button onClick={handleSignOut} className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0">
+
+            {/* Logout */}
+            <button onClick={handleSignOut} className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0" title="ログアウト">
               <LogOut size={15} />
             </button>
           </div>
         ) : (
-          <Link
-            href="/login"
+          <Link href="/login"
             className="flex items-center justify-center gap-2 w-full text-white text-sm font-bold py-2.5 rounded-xl transition-all hover:opacity-90"
             style={{ background: '#5148E5' }}
           >
-            <Coins size={15} />
-            ログインして始める
+            <Coins size={15} />ログインして始める
           </Link>
         )}
       </div>
