@@ -29,9 +29,10 @@ export function CompanyClient() {
       }
     } catch {}
 
+    let unsub: (() => void) | null = null
     import('@/lib/supabase/client').then(({ createClient }) => {
       const supabase = createClient()
-      supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
         if (!session) { router.push('/login'); return }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: p } = await (supabase as any).from('profiles').select('*').eq('id', session.user.id).single()
@@ -40,7 +41,9 @@ export function CompanyClient() {
           setForm(f => ({ ...f, company_name: p.company_name || '', company_role: p.company_role || '', company_description: p.company_description || '' }))
         }
       })
+      unsub = () => subscription.unsubscribe()
     })
+    return () => unsub?.()
   }, [router])
 
   const handleSave = async (e: React.FormEvent) => {
