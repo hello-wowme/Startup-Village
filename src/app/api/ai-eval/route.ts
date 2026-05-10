@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ score, feedback })
   } catch (e) {
-    console.error(e)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[ai-eval]', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
