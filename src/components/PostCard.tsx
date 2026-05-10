@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { PostWithProfile } from '@/types/database'
 import { BlueBadge } from './BlueBadge'
 import { MessageCircle, Sparkles, Building2 } from 'lucide-react'
@@ -31,6 +31,28 @@ export function PostCard({ post }: PostCardProps) {
   const profile = post.profiles
   const catColor = CATEGORY_COLORS[post.category] ?? CATEGORY_COLORS['その他']
   const [coinsReceived, setCoinsReceived] = useState(post.coins_received)
+
+  useEffect(() => {
+    let channel: ReturnType<typeof import('@/lib/supabase/client').createClient['prototype']['channel']> | null = null
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      const supabase = createClient()
+      channel = supabase
+        .channel(`post-coins-${post.id}`)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'posts',
+          filter: `id=eq.${post.id}`,
+        }, (payload) => {
+          const updated = payload.new as { coins_received: number }
+          if (typeof updated.coins_received === 'number') {
+            setCoinsReceived(updated.coins_received)
+          }
+        })
+        .subscribe()
+    })
+    return () => { channel?.unsubscribe() }
+  }, [post.id])
 
   return (
     <Link href={`/post/${post.id}`} className="block group">
