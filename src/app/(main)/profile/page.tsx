@@ -20,22 +20,19 @@ export default function ProfilePage() {
   const [weeklyLoading, setWeeklyLoading] = useState(false)
   const [form, setForm] = useState({ display_name: '', bio: '', company_name: '', company_role: '', company_description: '' })
 
-  const load = async () => {
+  const fetchData = async (userId: string) => {
     try {
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { window.location.href = '/login'; return }
-      const user = session.user
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: p } = await (supabase as any).from('profiles').select('*').eq('id', user.id).single()
+      const { data: p } = await (supabase as any).from('profiles').select('*').eq('id', userId).single()
       if (p) {
         setProfile(p as Profile)
         setForm({ display_name: p.display_name || '', bio: p.bio || '', company_name: p.company_name || '', company_role: p.company_role || '', company_description: p.company_description || '' })
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: userPosts } = await (supabase as any)
-        .from('posts').select('*, profiles(*)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10)
+        .from('posts').select('*, profiles(*)').eq('user_id', userId).order('created_at', { ascending: false }).limit(10)
       if (userPosts) setPosts(userPosts as PostWithProfile[])
     } catch (e) {
       console.error(e)
@@ -44,7 +41,24 @@ export default function ProfilePage() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    let sub: { unsubscribe: () => void } | null = null
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      const supabase = createClient()
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          fetchData(session.user.id)
+        } else {
+          window.location.href = '/login'
+        }
+      })
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!session) window.location.href = '/login'
+      })
+      sub = subscription
+    })
+    return () => sub?.unsubscribe()
+  }, [])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,7 +71,8 @@ export default function ProfilePage() {
     await (supabase as any).from('profiles').update(form).eq('id', session.user.id)
     setSaving(false)
     setEditing(false)
-    load()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) fetchData(session.user.id)
   }
 
   const handleBlueBadge = async () => {

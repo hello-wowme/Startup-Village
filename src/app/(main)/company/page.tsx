@@ -15,27 +15,23 @@ export default function CompanyPage() {
   const [form, setForm] = useState({ company_name: '', company_role: '', company_description: '', industry: 'テクノロジー' })
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      const supabase = createClient()
+      supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) { window.location.href = '/login'; return }
-        const user = session.user
-        const { data } = await (supabase as any).from('profiles').select('*').eq('id', user.id).single()
-        if (data) setForm({
-          company_name: data.company_name || '',
-          company_role: data.company_role || '',
-          company_description: data.company_description || '',
-          industry: 'テクノロジー',
-        })
-      } catch (e) {
-        console.error(e)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
+        ;(supabase as any).from('profiles').select('*').eq('id', session.user.id).single()
+          .then(({ data }: { data: any }) => {
+            if (data) setForm({
+              company_name: data.company_name || '',
+              company_role: data.company_role || '',
+              company_description: data.company_description || '',
+              industry: 'テクノロジー',
+            })
+            setLoading(false)
+          })
+          .catch(() => setLoading(false))
+      }).catch(() => setLoading(false))
+    })
   }, [])
 
   const handleSave = async (e: React.FormEvent) => {
