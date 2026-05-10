@@ -1,33 +1,71 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Profile } from '@/types/database'
 import { Loader2, Save } from 'lucide-react'
 
 const INDUSTRIES = ['テクノロジー','フード・飲食','ヘルスケア','エンタメ','教育','FinTech','EC・小売','サービス業','ものづくり','その他']
 
-export function CompanyClient({ profile }: { profile: Profile }) {
+export function CompanyClient() {
+  const router = useRouter()
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
-    company_name: profile.company_name || '',
-    company_role: profile.company_role || '',
-    company_description: profile.company_description || '',
+    company_name: '',
+    company_role: '',
+    company_description: '',
     industry: 'テクノロジー',
   })
 
+  useEffect(() => {
+    // キャッシュから即時表示
+    try {
+      const cached = localStorage.getItem('sb_profile')
+      if (cached) {
+        const p = JSON.parse(cached) as Profile
+        setProfile(p)
+        setForm(f => ({ ...f, company_name: p.company_name || '', company_role: p.company_role || '', company_description: p.company_description || '' }))
+      }
+    } catch {}
+
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      const supabase = createClient()
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (!session) { router.push('/login'); return }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: p } = await (supabase as any).from('profiles').select('*').eq('id', session.user.id).single()
+        if (p) {
+          setProfile(p)
+          setForm(f => ({ ...f, company_name: p.company_name || '', company_role: p.company_role || '', company_description: p.company_description || '' }))
+        }
+      })
+    })
+  }, [router])
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!profile) return
     setSaving(true)
     const { createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('profiles').update({
+    await (createClient() as any).from('profiles').update({
       company_name: form.company_name,
       company_role: form.company_role,
       company_description: form.company_description,
     }).eq('id', profile.id)
+    const updated = { ...profile, company_name: form.company_name, company_role: form.company_role, company_description: form.company_description }
+    try { localStorage.setItem('sb_profile', JSON.stringify(updated)) } catch {}
     setSaving(false)
     alert('保存しました')
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 size={28} className="animate-spin text-gray-300" />
+      </div>
+    )
   }
 
   return (

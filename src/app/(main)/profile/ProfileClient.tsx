@@ -1,35 +1,63 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { BlueBadge } from '@/components/BlueBadge'
 import { PostCard } from '@/components/PostCard'
 import type { Profile, PostWithProfile } from '@/types/database'
 import { Loader2, Pencil, LogOut, BadgeCheck, Save, X, Gift, FileText, Coins, Award } from 'lucide-react'
 
-export function ProfileClient({ profile: initialProfile, posts }: { profile: Profile; posts: PostWithProfile[] }) {
+export function ProfileClient() {
   const router = useRouter()
-  const [profile, setProfile] = useState(initialProfile)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [posts, setPosts] = useState<PostWithProfile[]>([])
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [badgeLoading, setBadgeLoading] = useState(false)
   const [weeklyLoading, setWeeklyLoading] = useState(false)
-  const [form, setForm] = useState({
-    display_name: profile.display_name || '',
-    bio: profile.bio || '',
-    company_name: profile.company_name || '',
-    company_role: profile.company_role || '',
-    company_description: profile.company_description || '',
-  })
+  const [form, setForm] = useState({ display_name: '', bio: '', company_name: '', company_role: '', company_description: '' })
+
+  useEffect(() => {
+    // キャッシュから即時表示
+    try {
+      const cached = localStorage.getItem('sb_profile')
+      if (cached) {
+        const p = JSON.parse(cached) as Profile
+        setProfile(p)
+        setForm({ display_name: p.display_name || '', bio: p.bio || '', company_name: p.company_name || '', company_role: p.company_role || '', company_description: p.company_description || '' })
+      }
+    } catch {}
+
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      const supabase = createClient()
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (!session) { router.push('/login'); return }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const db = supabase as any
+        const [{ data: p }, { data: postsData }] = await Promise.all([
+          db.from('profiles').select('*').eq('id', session.user.id).single(),
+          db.from('posts').select('*, profiles(*)').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(10),
+        ])
+        if (p) {
+          setProfile(p)
+          setForm({ display_name: p.display_name || '', bio: p.bio || '', company_name: p.company_name || '', company_role: p.company_role || '', company_description: p.company_description || '' })
+          try { localStorage.setItem('sb_profile', JSON.stringify(p)) } catch {}
+        }
+        if (postsData) setPosts(postsData)
+      })
+    })
+  }, [router])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!profile) return
     setSaving(true)
     const { createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('profiles').update(form).eq('id', profile.id)
-    setProfile({ ...profile, ...form })
+    await (createClient() as any).from('profiles').update(form).eq('id', profile.id)
+    const updated = { ...profile, ...form }
+    setProfile(updated)
+    try { localStorage.setItem('sb_profile', JSON.stringify(updated)) } catch {}
     setSaving(false)
     setEditing(false)
   }
@@ -50,7 +78,7 @@ export function ProfileClient({ profile: initialProfile, posts }: { profile: Pro
     setWeeklyLoading(false)
     if (data.ok) {
       alert(`${data.amount.toLocaleString()}コインを受け取りました！`)
-      setProfile(p => ({ ...p, coins: p.coins + data.amount }))
+      setProfile(p => p ? { ...p, coins: p.coins + data.amount } : p)
     } else {
       alert(data.error || 'エラーが発生しました')
     }
@@ -59,8 +87,16 @@ export function ProfileClient({ profile: initialProfile, posts }: { profile: Pro
   const handleSignOut = async () => {
     const { createClient } = await import('@/lib/supabase/client')
     await createClient().auth.signOut()
+    try { localStorage.removeItem('sb_profile') } catch {}
     router.push('/')
-    router.refresh()
+  }
+
+  if (!profile) {
+    return (
+      <div className="max-w-2xl mx-auto flex items-center justify-center py-32">
+        <Loader2 size={28} className="animate-spin text-gray-300" />
+      </div>
+    )
   }
 
   const displayName = profile.display_name || profile.username || ''
@@ -68,7 +104,6 @@ export function ProfileClient({ profile: initialProfile, posts }: { profile: Pro
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-black text-gray-900">プロフィール</h1>
         {!editing && (
@@ -78,7 +113,6 @@ export function ProfileClient({ profile: initialProfile, posts }: { profile: Pro
         )}
       </div>
 
-      {/* Profile card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="h-28" style={{ background: 'linear-gradient(135deg, #5148E5 0%, #38BDF8 100%)' }} />
         <div className="px-6 pb-6">
@@ -133,7 +167,6 @@ export function ProfileClient({ profile: initialProfile, posts }: { profile: Pro
           )}
         </div>
 
-        {/* Stats */}
         {!editing && (
           <div className="grid grid-cols-3 gap-3 px-6 pb-6">
             <div className="rounded-xl p-3 text-center" style={{ background: '#FFF8E1' }}>
@@ -161,7 +194,6 @@ export function ProfileClient({ profile: initialProfile, posts }: { profile: Pro
         )}
       </div>
 
-      {/* Actions */}
       {!editing && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
           <h3 className="text-sm font-black text-gray-500 uppercase tracking-wide">特典・アクション</h3>
@@ -196,7 +228,6 @@ export function ProfileClient({ profile: initialProfile, posts }: { profile: Pro
         </div>
       )}
 
-      {/* My Posts */}
       {!editing && (
         <div>
           <h3 className="text-lg font-black text-gray-900 mb-3">投稿一覧 <span className="text-sm font-medium text-gray-400">({posts.length}件)</span></h3>
@@ -216,7 +247,6 @@ export function ProfileClient({ profile: initialProfile, posts }: { profile: Pro
         </div>
       )}
 
-      {/* Logout */}
       {!editing && (
         <div className="pb-4">
           <button onClick={handleSignOut} className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-red-100 text-red-400 text-sm font-semibold hover:bg-red-50 transition-all">
