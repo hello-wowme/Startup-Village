@@ -45,7 +45,21 @@ export function PostCard({ post }: PostCardProps) {
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-bold text-gray-900 text-sm">{profile.display_name || profile.username}</span>
               {profile.has_blue_badge && <BlueBadge size={15} />}
-              <span className="text-gray-400 text-xs">@{profile.username}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {profile.twitter_handle ? (
+                <a
+                  href={`https://x.com/${profile.twitter_handle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="text-xs text-gray-400 hover:text-blue-500 hover:underline transition-colors"
+                >
+                  @{profile.twitter_handle}
+                </a>
+              ) : (
+                <span className="text-gray-400 text-xs">@{profile.username}</span>
+              )}
             </div>
             {profile.company_name && (
               <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
