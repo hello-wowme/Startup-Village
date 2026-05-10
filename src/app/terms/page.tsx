@@ -7,7 +7,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="font-bold text-gray-900 text-base mb-2">1. サービスの概要</h2>
-          <p>本サービスは、起業アイデアをシェアし、仲間から応援コイン（アプリ内仮想通貨）を受け取れる起業シミュレーションSNSです。コインは現金化できません。</p>
+          <p>本サービスは、起業アイデアをシェアし、仲間から応援コイン（アプリ内通貨）を受け取れる起業シミュレーションSNSです。コインは現金化できません。</p>
         </section>
 
         <section>
