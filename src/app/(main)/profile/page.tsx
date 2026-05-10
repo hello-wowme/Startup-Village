@@ -43,19 +43,23 @@ export default function ProfilePage() {
 
   useEffect(() => {
     let sub: { unsubscribe: () => void } | null = null
+    let resolved = false
+
     import('@/lib/supabase/client').then(({ createClient }) => {
       const supabase = createClient()
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          fetchData(session.user.id)
-        } else {
-          window.location.href = '/login'
-        }
-      })
+
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (!session) window.location.href = '/login'
+        if (resolved) return
+        resolved = true
+        if (!session) { window.location.href = '/login'; return }
+        fetchData(session.user.id)
       })
       sub = subscription
+
+      // フォールバック: 3秒後にもセッションが取得できなければログインへ
+      setTimeout(() => {
+        if (!resolved) { resolved = true; window.location.href = '/login' }
+      }, 3000)
     })
     return () => sub?.unsubscribe()
   }, [])
