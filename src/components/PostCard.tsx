@@ -8,6 +8,7 @@ import { BlueBadge } from './BlueBadge'
 import { CoinDisplay } from './CoinDisplay'
 import { MessageCircle, Sparkles, Building2 } from 'lucide-react'
 import { DeletePostButton } from './DeletePostButton'
+import { SupportButton } from './SupportButton'
 
 interface PostCardProps {
   post: PostWithProfile
@@ -103,13 +104,16 @@ export function PostCard({ post }: PostCardProps) {
           </div>
         )}
 
-        {/* Stats */}
+        {/* Stats + Support */}
         <div className="mt-3 flex items-center gap-4 text-xs text-gray-400">
           <span className="flex items-center gap-1">
             <MessageCircle size={13} />
             {post.comments_count}件
           </span>
           <CoinDisplay amount={post.coins_received} size="sm" />
+          <div className="ml-auto">
+            <SupportButton postId={post.id} postUserId={post.user_id} />
+          </div>
         </div>
       </article>
     </Link>
